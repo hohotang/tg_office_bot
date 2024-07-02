@@ -1,0 +1,11 @@
+﻿*.exe
+*.json
+*.gif
+*.jpg
+*.png
+*.jpeg
+*.mp4
+*.wav
+*.xlsx
+*.exe~
+.git_old
