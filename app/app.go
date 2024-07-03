@@ -35,13 +35,15 @@ func NewApp(version string) *DefaultApp {
 func (app *DefaultApp) Run(debug bool) {
 	defer recoverPanic()
 
-	bot, err := tgbotapi.NewBotAPI(conf.TOKEN)
+	config := conf.GetInstance()
+
+	bot, err := tgbotapi.NewBotAPI(config.Token)
 	if err != nil {
 		log.Panic(err)
 	}
 	bot.Debug = debug
 
-	if err := utils.LoadDataFromFile(conf.SAVE_FILE_NAME); err != nil {
+	if err := utils.LoadDataFromFile(config.SaveFileName); err != nil {
 		log.Printf("Failed to save data to file: %v", err)
 	}
 
@@ -56,8 +58,8 @@ func (app *DefaultApp) Run(debug bool) {
 		sig := <-signalChan
 		log.Printf("Received signal: %s", sig)
 		// Save data to file
-		err = os.MkdirAll(conf.SAVE_FILE_PATH, os.ModePerm)
-		if err := utils.SaveDataToFile(conf.SAVE_FILE_NAME); err != nil {
+		err = os.MkdirAll(config.SaveFilePath, os.ModePerm)
+		if err := utils.SaveDataToFile(config.SaveFileName); err != nil {
 			log.Printf("Failed to save data to file: %v", err)
 		}
 		doneChan <- true

@@ -312,7 +312,7 @@ type GetGifCommand struct{}
 
 func (h *GetGifCommand) HandleCommand(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	chatID := update.Message.Chat.ID
-	gifPath, err := utils.GetRandomGif(conf.MEME_PATH)
+	gifPath, err := utils.GetRandomGif(conf.GetInstance().MemePath)
 	if err != nil {
 		utils.SendMessage(bot, chatID, "Error getting gif: "+err.Error())
 		return
@@ -324,7 +324,7 @@ type GetMusicCommand struct{}
 
 func (h *GetMusicCommand) HandleCommand(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	chatID := update.Message.Chat.ID
-	gifPath, err := utils.GetRandomMusic(conf.MUSIC_PATH)
+	gifPath, err := utils.GetRandomMusic(conf.GetInstance().MusicPath)
 	if err != nil {
 		utils.SendMessage(bot, chatID, "Error getting music: "+err.Error())
 		return
@@ -346,7 +346,7 @@ func (h *RebootCommand) HandleCommand(bot *tgbotapi.BotAPI, update *tgbotapi.Upd
 type TestCommand struct{}
 
 func (h *TestCommand) HandleCommand(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
-	utils.SaveDataToFile(conf.SAVE_FILE_NAME)
+	utils.SaveDataToFile(conf.GetInstance().SaveFileName)
 }
 
 func InitializePrivateCommandRouter() *CommandRouter {

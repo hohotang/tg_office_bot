@@ -28,8 +28,9 @@ func ProcessCallbackQuery(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 }
 
 func activateBat(branchStr string, userName string) {
-	batFilePath := filepath.Join(conf.BAT_PATH, conf.BAT_NAME)
-	args := []string{conf.STORE_FILE_PATH, conf.GIT_SERVER_PATH, branchStr, userName}
+	config := conf.GetInstance()
+	batFilePath := filepath.Join(config.BatPath, config.BatName)
+	args := []string{config.StoreFilePath, config.GitServerPath, branchStr, userName}
 
 	if _, err := os.Stat(batFilePath); os.IsNotExist(err) {
 		log.Fatalf("Batch file does not exist: %s", batFilePath)
@@ -55,7 +56,7 @@ func ProcessUpdateGameSettingCB(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	switch cb.Data {
 	case constant.CALL_BACK_TEST:
 		text = fmt.Sprintf("開始更新TEST企劃資料 by %s", cb.From.FirstName)
-		groupID = conf.TEST_GROUP_ID
+		groupID = conf.GetInstance().TestGroupId
 		branchStr = constant.BRANCH_TEST
 	default:
 		return

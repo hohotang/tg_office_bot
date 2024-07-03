@@ -53,7 +53,7 @@ func ProcessExcel(bot *tgbotapi.BotAPI, update *tgbotapi.Update) error {
 	}
 	defer resp.Body.Close()
 
-	saveDir := conf.STORE_FILE_PATH
+	saveDir := conf.GetInstance().StoreFilePath
 	err = os.MkdirAll(saveDir, os.ModePerm)
 	if err != nil {
 		log.Printf("Failed to create directory: %v", err)

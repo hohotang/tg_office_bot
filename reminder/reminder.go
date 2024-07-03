@@ -28,6 +28,7 @@ type ReminderConfig struct {
 var reminderSwitch bool
 
 func Start(bot *tgbotapi.BotAPI) {
+	config := conf.GetInstance()
 	loc, err := time.LoadLocation("Asia/Taipei")
 	if err != nil {
 		log.Panic(err)
@@ -36,7 +37,7 @@ func Start(bot *tgbotapi.BotAPI) {
 	reminderSwitch = true
 
 	reminders := []ReminderConfig{
-		{reminder_test, "30 14 * * 1-5", conf.TEST_GROUP_ID, "*測試*"},
+		{reminder_test, "30 14 * * 1-5", config.TestGroupId, "*測試*"},
 	}
 
 	for _, reminder := range reminders {
@@ -60,7 +61,7 @@ func addReminder(c *cron.Cron, bot *tgbotapi.BotAPI, reminder ReminderConfig) {
 			case reminder_weekend:
 				SendWeekendGif(bot, reminder.ChatID)
 			case reminder_test:
-				SendWeekendGif(bot, conf.TEST_GROUP_ID)
+				SendWeekendGif(bot, conf.GetInstance().TestGroupId)
 			}
 		}
 	})
@@ -75,11 +76,11 @@ func ReminderSwitch() bool {
 }
 
 func SendGoodMorningGif(bot *tgbotapi.BotAPI, chatID int64) {
-	SendGif(bot, chatID, conf.GOOD_MORING_PATH)
+	SendGif(bot, chatID, conf.GetInstance().GoodMorningPath)
 }
 
 func SendWeekendGif(bot *tgbotapi.BotAPI, chatID int64) {
-	SendGif(bot, chatID, conf.WEEKEND_PATH)
+	SendGif(bot, chatID, conf.GetInstance().WeekendPath)
 }
 
 func SendGif(bot *tgbotapi.BotAPI, chatID int64, gifSource string) {

@@ -210,7 +210,7 @@ func SaveDataToFile(filename string) error {
 		RestaurantMap:      data.RestaurantMap[:],
 	}
 
-	file, err := os.Create(conf.SAVE_FILE_PATH + filename)
+	file, err := os.Create(conf.GetInstance().SaveFilePath + filename)
 	if err != nil {
 		return err
 	}
@@ -226,7 +226,7 @@ func SaveDataToFile(filename string) error {
 }
 
 func LoadDataFromFile(filename string) error {
-	file, err := os.Open(conf.SAVE_FILE_PATH + filename)
+	file, err := os.Open(conf.GetInstance().SaveFilePath + filename)
 	if err != nil {
 		return err
 	}
