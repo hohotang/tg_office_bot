@@ -35,6 +35,7 @@ type SaveData struct {
 	RestaurantMap      []map[string]RestaurantInfo `json:"restaurant_map"`
 }
 
+// TODO change storage location
 type AddRestaurantState struct {
 	State       int
 	Name        string
