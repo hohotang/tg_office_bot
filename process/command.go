@@ -254,10 +254,7 @@ func (h *AddRestaurantCommand) HandleCommand(bot *tgbotapi.BotAPI, update *tgbot
 		utils.SendMessage(bot, update.Message.Chat.ID, msgUnauthorized)
 		return
 	}
-	data.UserStates[update.Message.From.ID] = &data.AddRestaurantState{
-		State: constant.ADD_STATE_NAME,
-	}
-	utils.SendMessage(bot, update.Message.From.ID, "請輸入餐廳名稱:")
+	registAddRestaurant(bot, update)
 }
 
 type DelRestaurantCommand struct{}

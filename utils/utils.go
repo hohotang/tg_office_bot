@@ -323,3 +323,13 @@ func AnalysisAddRestaurantCB(cs string) string {
 	parts := strings.Split(cs, "_")
 	return parts[1]
 }
+
+func GetFromID(update *tgbotapi.Update) int64 {
+	var id int64
+	if update.Message != nil {
+		id = update.Message.From.ID
+	} else if update.CallbackQuery != nil {
+		id = update.CallbackQuery.From.ID
+	}
+	return id
+}

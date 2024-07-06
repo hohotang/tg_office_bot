@@ -9,7 +9,6 @@ import (
 	"strings"
 	"tgbot/conf"
 	"tgbot/constant"
-	"tgbot/data"
 	"tgbot/utils"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -20,8 +19,6 @@ func ProcessCallbackQuery(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 
 	if utils.IsAskRestaurantCallback(cb.Data) {
 		ProcessAskRestaurantCB(bot, update)
-	} else if utils.IsAddRestaurantCallback(cb.Data) {
-		ProcessAddRestaurantCB(bot, update)
 	} else if utils.IsUpdateGameSettingCallback(cb.Data) {
 		ProcessUpdateGameSettingCB(bot, update)
 	}
@@ -87,38 +84,4 @@ func ProcessAskRestaurantCB(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	text := builder.String()
 	fmt.Println(text)
 	utils.SendMessage(bot, cb.From.ID, text)
-}
-
-func ProcessAddRestaurantCB(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
-	cb := update.CallbackQuery
-	arState := getUserState(cb.From.ID)
-	if arState == nil {
-		AddingFailed(bot, cb.From.ID, "")
-		return
-	}
-	str := utils.AnalysisAddRestaurantCB(cb.Data)
-	switch arState.State {
-	case constant.ADD_STATE_PRICE:
-		if processAddPriceState(arState, str) {
-			arState.State = constant.ADD_STATE_DESCR
-			utils.SendMessage(bot, cb.From.ID, "請輸入餐廳描述:")
-		} else {
-			AddingFailed(bot, cb.From.ID, "")
-		}
-	case constant.ADD_STATE_CHECK:
-		if str == constant.CALLBACK_CONFIRM {
-			AddingSuccess(bot, update)
-		} else {
-			AddingFailed(bot, cb.From.ID, "新增餐廳已取消")
-		}
-	}
-}
-
-func processAddPriceState(arState *data.AddRestaurantState, str string) bool {
-	if str == constant.CALLBACK_LOW || str == constant.CALLBACK_MID || str == constant.CALLBACK_HIGH {
-		arState.PriceStr = str
-	} else {
-		return false
-	}
-	return true
 }

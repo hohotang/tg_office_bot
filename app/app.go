@@ -8,6 +8,7 @@ import (
 	"sync"
 	"syscall"
 	"tgbot/conf"
+	"tgbot/interactive"
 	"tgbot/process"
 	"tgbot/reminder"
 	"tgbot/utils"
@@ -94,8 +95,8 @@ func (app *DefaultApp) handleUpdate(bot *tgbotapi.BotAPI, update *tgbotapi.Updat
 			process.SendBannedMessage(bot, update.Message.From.ID)
 			return
 		}
-		if process.IsUserAddingRestaurant(update.Message.From.ID) {
-			process.HandleAddingMessage(bot, update)
+		if interactive.IsInInteractiveMode(update.Message.From.ID) {
+			interactive.ProcessInteractive(update.Message.From.ID, bot, update)
 		} else if update.Message.IsCommand() && utils.IsChatPrivate(update) {
 			app.privateCommandRouter.Route(bot, update)
 		} else if update.Message.IsCommand() && !utils.IsChatPrivate(update) {
@@ -106,7 +107,11 @@ func (app *DefaultApp) handleUpdate(bot *tgbotapi.BotAPI, update *tgbotapi.Updat
 	}
 
 	if update.CallbackQuery != nil {
-		process.ProcessCallbackQuery(bot, update)
+		if interactive.IsInInteractiveMode(update.CallbackQuery.From.ID) {
+			interactive.ProcessInteractive(update.CallbackQuery.From.ID, bot, update)
+		} else {
+			process.ProcessCallbackQuery(bot, update)
+		}
 	}
 }
 

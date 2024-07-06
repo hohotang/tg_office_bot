@@ -4,64 +4,150 @@ import (
 	"fmt"
 	"tgbot/constant"
 	"tgbot/data"
+	"tgbot/interactive"
 	"tgbot/utils"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-func HandleAddingMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
-	message := update.Message
-	arState := getUserState(message.From.ID)
-	switch arState.State {
-	case constant.ADD_STATE_NONE:
-		AddingFailed(bot, update.Message.From.ID, "狀態錯誤")
-		return
-	case constant.ADD_STATE_NAME:
-		arState.Name = message.Text
-		if isRestaurantExist(arState.Name) {
-			AddingFailed(bot, update.Message.From.ID, fmt.Sprintf("餐廳%s已經存在", arState.Name))
-			return
-		}
-		arState.State = constant.ADD_STATE_PRICE
-		msg := tgbotapi.NewMessage(message.Chat.ID, "請選擇價位:")
-		msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
-			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("低", fmt.Sprintf("%s_%s", constant.CALLBACK_ADD, constant.CALLBACK_LOW)),
-				tgbotapi.NewInlineKeyboardButtonData("中", fmt.Sprintf("%s_%s", constant.CALLBACK_ADD, constant.CALLBACK_MID)),
-				tgbotapi.NewInlineKeyboardButtonData("高", fmt.Sprintf("%s_%s", constant.CALLBACK_ADD, constant.CALLBACK_HIGH)),
-			),
-		)
-		utils.Send(bot, msg)
-	case constant.ADD_STATE_PRICE:
-		AddingFailed(bot, update.Message.From.ID, "請使用選項")
-	case constant.ADD_STATE_DESCR:
-		arState.Description = message.Text
-		arState.State = constant.ADD_STATE_CHECK
-		// 確認餐廳信息
-		confirmationMessage := fmt.Sprintf(
-			"請確認以下餐廳信息:\n\n餐廳名稱: %s\n價位: %s\n描述: %s\n\n請輸入 '確認' 或 '取消'",
-			arState.Name, constant.PriceStrMap[arState.PriceStr], arState.Description,
-		)
-		msg := tgbotapi.NewMessage(message.Chat.ID, confirmationMessage)
-		msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
-			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("確認", fmt.Sprintf("%s_%s", constant.CALLBACK_ADD, constant.CALLBACK_CONFIRM)),
-				tgbotapi.NewInlineKeyboardButtonData("取消", fmt.Sprintf("%s_%s", constant.CALLBACK_ADD, constant.CALLBACK_DENY)),
-			),
-		)
-		utils.Send(bot, msg)
-	case constant.ADD_STATE_CHECK:
-		AddingFailed(bot, update.Message.From.ID, "請使用選項")
-	}
+type AddRestaurantState struct {
+	Name        string
+	PriceLevel  string
+	Description string
 }
 
-func AddingSuccess(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
+func askRestaurantName(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPtr *interface{}) bool {
+	msg := tgbotapi.NewMessage(utils.GetFromID(update), "請輸入餐廳名稱:")
+	utils.Send(bot, msg)
+	return true
+}
+
+func replyRestaurantName(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPtr *interface{}) bool {
+	state, ok := (*arDataPtr).(*AddRestaurantState)
+	if !ok {
+		AddingFailed(bot, utils.GetFromID(update), "內部錯誤，無法解析餐廳狀態")
+		return false
+	}
+	if isRestaurantExist(update.Message.Text) {
+		AddingFailed(bot, utils.GetFromID(update), fmt.Sprintf("餐廳%s已經存在", update.Message.Text))
+		return false
+	}
+	state.Name = update.Message.Text
+	return true
+}
+
+func askPriceLevel(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPtr *interface{}) bool {
+	msg := tgbotapi.NewMessage(utils.GetFromID(update), "請選擇價位:")
+	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("低", fmt.Sprintf("%s_%s", constant.CALLBACK_ADD, constant.CALLBACK_LOW)),
+			tgbotapi.NewInlineKeyboardButtonData("中", fmt.Sprintf("%s_%s", constant.CALLBACK_ADD, constant.CALLBACK_MID)),
+			tgbotapi.NewInlineKeyboardButtonData("高", fmt.Sprintf("%s_%s", constant.CALLBACK_ADD, constant.CALLBACK_HIGH)),
+		),
+	)
+	utils.Send(bot, msg)
+	return true
+}
+
+func replyPriceLevel(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPtr *interface{}) bool {
+	if update.CallbackQuery == nil {
+		AddingFailed(bot, utils.GetFromID(update), "請使用選項")
+		return false
+	}
+	state, ok := (*arDataPtr).(*AddRestaurantState)
+	if !ok {
+		AddingFailed(bot, utils.GetFromID(update), "內部錯誤，無法解析餐廳狀態")
+		return false
+	}
+
+	callbackData := update.CallbackQuery.Data
+	str := utils.AnalysisAddRestaurantCB(callbackData)
+	if !processAddPriceState(state, str) {
+		AddingFailed(bot, utils.GetFromID(update), "請正確使用選項")
+		return false
+	}
+
+	return true
+}
+
+func askDescription(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPtr *interface{}) bool {
+	msg := tgbotapi.NewMessage(utils.GetFromID(update), "請輸入餐廳描述:")
+	utils.Send(bot, msg)
+	return true
+}
+
+func replyDescription(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPtr *interface{}) bool {
+	state := (*arDataPtr).(*AddRestaurantState)
+	if update.Message == nil {
+		AddingFailed(bot, utils.GetFromID(update), "錯誤")
+		return false
+	}
+	state.Description = update.Message.Text
+	*arDataPtr = state
+	return true
+}
+
+func askConfirm(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPtr *interface{}) bool {
+	state, ok := (*arDataPtr).(*AddRestaurantState)
+	if !ok {
+		AddingFailed(bot, utils.GetFromID(update), "內部錯誤，無法解析餐廳狀態")
+		return false
+	}
+	// 確認餐廳信息
+	confirmationMessage := fmt.Sprintf(
+		"請確認以下餐廳信息:\n\n餐廳名稱: %s\n價位: %s\n描述: %s\n\n請輸入 '確認' 或 '取消'",
+		state.Name, constant.PriceStrMap[state.PriceLevel], state.Description,
+	)
+	msg := tgbotapi.NewMessage(utils.GetFromID(update), confirmationMessage)
+	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("確認", fmt.Sprintf("%s_%s", constant.CALLBACK_ADD, constant.CALLBACK_CONFIRM)),
+			tgbotapi.NewInlineKeyboardButtonData("取消", fmt.Sprintf("%s_%s", constant.CALLBACK_ADD, constant.CALLBACK_DENY)),
+		),
+	)
+	utils.Send(bot, msg)
+	return true
+}
+
+func replyConfirm(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPtr *interface{}) bool {
+	state, ok := (*arDataPtr).(*AddRestaurantState)
+	if !ok {
+		AddingFailed(bot, utils.GetFromID(update), "內部錯誤，無法解析餐廳狀態")
+		return false
+	}
+
+	if update.CallbackQuery == nil {
+		AddingFailed(bot, utils.GetFromID(update), "請使用選項")
+	}
+	callbackData := update.CallbackQuery.Data
+	str := utils.AnalysisAddRestaurantCB(callbackData)
+	if str == constant.CALLBACK_CONFIRM {
+		AddingSuccess(bot, update, state)
+	} else {
+		AddingFailed(bot, utils.GetFromID(update), "新增餐廳已取消")
+	}
+
+	return true
+}
+
+func registAddRestaurant(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
+	data := &AddRestaurantState{}
+	steps := []*interactive.InteractiveStep{
+		{Ask: askRestaurantName, Reply: replyRestaurantName},
+		{Ask: askPriceLevel, Reply: replyPriceLevel},
+		{Ask: askDescription, Reply: replyDescription},
+		{Ask: askConfirm, Reply: replyConfirm},
+	}
+	interactive.RegisInteractiveMode(update.Message.From.ID, data, steps)
+	steps[0].Ask(bot, update, nil)
+}
+
+func AddingSuccess(bot *tgbotapi.BotAPI, update *tgbotapi.Update, state *AddRestaurantState) {
 	cb := update.CallbackQuery
 	userId := cb.From.ID
-	arState := getUserState(userId)
-	priceLevel := constant.PriceLevelMap[arState.PriceStr]
-	restaurantName := arState.Name
-	info := arState.Description
+	priceLevel := constant.PriceLevelMap[state.PriceLevel]
+	restaurantName := state.Name
+	info := state.Description
 	userName := fmt.Sprintf("%s %s", cb.From.FirstName, cb.From.LastName)
 	data.RestaurantMap[priceLevel][restaurantName] = data.RestaurantInfo{
 		Recommender: userName,
@@ -69,6 +155,7 @@ func AddingSuccess(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 		Info:        info,
 	}
 	sendMessageAndClearState(bot, userId, fmt.Sprintf("感謝 %s, 成功加入餐廳: %s", userName, restaurantName))
+
 }
 
 func AddingFailed(bot *tgbotapi.BotAPI, userID int64, errorMsg string) {
@@ -77,8 +164,7 @@ func AddingFailed(bot *tgbotapi.BotAPI, userID int64, errorMsg string) {
 
 func sendMessageAndClearState(bot *tgbotapi.BotAPI, userID int64, message string) {
 	utils.SendMessage(bot, userID, message)
-
-	delete(data.UserStates, userID)
+	interactive.DelInteractive(userID)
 }
 
 func sendPriceLevelOptions(bot *tgbotapi.BotAPI, chatID int64, commandType string) {
@@ -160,14 +246,11 @@ func isRestaurantExist(restaurantName string) bool {
 	return false
 }
 
-func IsUserAddingRestaurant(id int64) bool {
-	state, exist := data.UserStates[id]
-	if !exist {
+func processAddPriceState(arState *AddRestaurantState, str string) bool {
+	if str == constant.CALLBACK_LOW || str == constant.CALLBACK_MID || str == constant.CALLBACK_HIGH {
+		arState.PriceLevel = str
+	} else {
 		return false
 	}
-	return state.State != constant.ADD_STATE_NONE
-}
-
-func getUserState(id int64) *data.AddRestaurantState {
-	return data.UserStates[id]
+	return true
 }

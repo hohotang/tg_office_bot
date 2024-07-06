@@ -35,14 +35,4 @@ type SaveData struct {
 	RestaurantMap      []map[string]RestaurantInfo `json:"restaurant_map"`
 }
 
-// TODO change storage location
-type AddRestaurantState struct {
-	State       int
-	Name        string
-	PriceStr    string
-	Description string
-}
-
-var UserStates = make(map[int64]*AddRestaurantState)
-
 var LastMessageID = make(map[int64]int)
