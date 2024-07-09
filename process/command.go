@@ -313,18 +313,13 @@ func (h *QADelCommand) HandleCommand(bot *tgbotapi.BotAPI, update *tgbotapi.Upda
 		utils.SendMessage(bot, update.Message.Chat.ID, msgUnauthorized)
 		return
 	}
-	id, _ := utils.ParseIDFromCommandArguments(update)
-	if questStr, err := DelQAInfo(int(id)); err == nil {
-		utils.SendMessage(bot, update.Message.Chat.ID, fmt.Sprintf("刪除問題: %s", questStr))
-	} else {
-		utils.SendMessage(bot, update.Message.Chat.ID, "沒有找到")
-	}
+	showDelQA(bot, update)
 }
 
 type QAShowListCommand struct{}
 
 func (h *QAShowListCommand) HandleCommand(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
-	showQAQuestions(bot, update)
+	showQA(bot, update)
 }
 
 type ReminderSwitchCommand struct{}

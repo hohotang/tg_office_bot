@@ -19,6 +19,7 @@ const (
 	CALLBACK_UPDATE     = "update"
 	CALL_BACK_TEST      = "update_test"
 	CALLBACK_QA         = "qa"
+	CALLBACK_QA_DEL     = "qadel"
 
 	BRANCH_TEST = "test/tg_auto"
 )

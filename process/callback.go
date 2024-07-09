@@ -23,6 +23,8 @@ func ProcessCallbackQuery(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 		ProcessUpdateGameSettingCB(bot, update)
 	} else if utils.IsQACallback(cb.Data) {
 		handleQAButtonClick(bot, update)
+	} else if utils.IsQADelCallback(cb.Data) {
+		handleQADelButtonClick(bot, update)
 	}
 }
 

@@ -260,6 +260,8 @@ func LoadDataFromFile(filename string) error {
 			data.RestaurantMap[pl][k] = v
 		}
 	}
+	// copy saveData.QAList to data.QAList
+	data.QAList = append(data.QAList, saveData.QAList...)
 
 	return nil
 }
@@ -316,6 +318,11 @@ func IsAddRestaurantCallback(cs string) bool {
 func IsQACallback(cs string) bool {
 	parts := strings.Split(cs, "_")
 	return parts[0] == constant.CALLBACK_QA
+}
+
+func IsQADelCallback(cs string) bool {
+	parts := strings.Split(cs, "_")
+	return parts[0] == constant.CALLBACK_QA_DEL
 }
 
 func AnalysisRestaurantCallback(cs string) (string, string) {
