@@ -10,7 +10,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-type AddRestaurantState struct {
+type AddRestaurantInfo struct {
 	Name        string
 	PriceLevel  string
 	Description string
@@ -23,7 +23,7 @@ func askRestaurantName(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPtr 
 }
 
 func replyRestaurantName(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPtr *interface{}) bool {
-	state, ok := (*arDataPtr).(*AddRestaurantState)
+	info, ok := (*arDataPtr).(*AddRestaurantInfo)
 	if !ok {
 		AddingFailed(bot, utils.GetFromID(update), "內部錯誤，無法解析餐廳狀態")
 		return false
@@ -32,7 +32,7 @@ func replyRestaurantName(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPt
 		AddingFailed(bot, utils.GetFromID(update), fmt.Sprintf("餐廳%s已經存在", update.Message.Text))
 		return false
 	}
-	state.Name = update.Message.Text
+	info.Name = update.Message.Text
 	return true
 }
 
@@ -54,7 +54,7 @@ func replyPriceLevel(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPtr *i
 		AddingFailed(bot, utils.GetFromID(update), "請使用選項")
 		return false
 	}
-	state, ok := (*arDataPtr).(*AddRestaurantState)
+	info, ok := (*arDataPtr).(*AddRestaurantInfo)
 	if !ok {
 		AddingFailed(bot, utils.GetFromID(update), "內部錯誤，無法解析餐廳狀態")
 		return false
@@ -62,7 +62,7 @@ func replyPriceLevel(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPtr *i
 
 	callbackData := update.CallbackQuery.Data
 	str := utils.AnalysisAddRestaurantCB(callbackData)
-	if !processAddPriceState(state, str) {
+	if !processAddPriceState(info, str) {
 		AddingFailed(bot, utils.GetFromID(update), "請正確使用選項")
 		return false
 	}
@@ -77,18 +77,18 @@ func askDescription(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPtr *in
 }
 
 func replyDescription(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPtr *interface{}) bool {
-	state := (*arDataPtr).(*AddRestaurantState)
+	info := (*arDataPtr).(*AddRestaurantInfo)
 	if update.Message == nil {
 		AddingFailed(bot, utils.GetFromID(update), "錯誤")
 		return false
 	}
-	state.Description = update.Message.Text
-	*arDataPtr = state
+	info.Description = update.Message.Text
+	*arDataPtr = info
 	return true
 }
 
-func askConfirm(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPtr *interface{}) bool {
-	state, ok := (*arDataPtr).(*AddRestaurantState)
+func askRestaurantConfirm(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPtr *interface{}) bool {
+	info, ok := (*arDataPtr).(*AddRestaurantInfo)
 	if !ok {
 		AddingFailed(bot, utils.GetFromID(update), "內部錯誤，無法解析餐廳狀態")
 		return false
@@ -96,7 +96,7 @@ func askConfirm(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPtr *interf
 	// 確認餐廳信息
 	confirmationMessage := fmt.Sprintf(
 		"請確認以下餐廳信息:\n\n餐廳名稱: %s\n價位: %s\n描述: %s\n\n請輸入 '確認' 或 '取消'",
-		state.Name, constant.PriceStrMap[state.PriceLevel], state.Description,
+		info.Name, constant.PriceStrMap[info.PriceLevel], info.Description,
 	)
 	msg := tgbotapi.NewMessage(utils.GetFromID(update), confirmationMessage)
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
@@ -109,8 +109,8 @@ func askConfirm(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPtr *interf
 	return true
 }
 
-func replyConfirm(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPtr *interface{}) bool {
-	state, ok := (*arDataPtr).(*AddRestaurantState)
+func replyRestaurantConfirm(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPtr *interface{}) bool {
+	info, ok := (*arDataPtr).(*AddRestaurantInfo)
 	if !ok {
 		AddingFailed(bot, utils.GetFromID(update), "內部錯誤，無法解析餐廳狀態")
 		return false
@@ -122,7 +122,7 @@ func replyConfirm(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPtr *inte
 	callbackData := update.CallbackQuery.Data
 	str := utils.AnalysisAddRestaurantCB(callbackData)
 	if str == constant.CALLBACK_CONFIRM {
-		AddingSuccess(bot, update, state)
+		AddingRestaurantSuccess(bot, update, info)
 	} else {
 		AddingFailed(bot, utils.GetFromID(update), "新增餐廳已取消")
 	}
@@ -131,38 +131,37 @@ func replyConfirm(bot *tgbotapi.BotAPI, update *tgbotapi.Update, arDataPtr *inte
 }
 
 func registAddRestaurant(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
-	data := &AddRestaurantState{}
+	data := &AddRestaurantInfo{}
 	steps := []*interactive.InteractiveStep{
 		{Ask: askRestaurantName, Reply: replyRestaurantName},
 		{Ask: askPriceLevel, Reply: replyPriceLevel},
 		{Ask: askDescription, Reply: replyDescription},
-		{Ask: askConfirm, Reply: replyConfirm},
+		{Ask: askRestaurantConfirm, Reply: replyRestaurantConfirm},
 	}
 	interactive.RegisInteractiveMode(update.Message.From.ID, data, steps)
 	steps[0].Ask(bot, update, nil)
 }
 
-func AddingSuccess(bot *tgbotapi.BotAPI, update *tgbotapi.Update, state *AddRestaurantState) {
+func AddingRestaurantSuccess(bot *tgbotapi.BotAPI, update *tgbotapi.Update, info *AddRestaurantInfo) {
 	cb := update.CallbackQuery
 	userId := cb.From.ID
-	priceLevel := constant.PriceLevelMap[state.PriceLevel]
-	restaurantName := state.Name
-	info := state.Description
+	priceLevel := constant.PriceLevelMap[info.PriceLevel]
+	restaurantName := info.Name
+	descp := info.Description
 	userName := fmt.Sprintf("%s %s", cb.From.FirstName, cb.From.LastName)
 	data.RestaurantMap[priceLevel][restaurantName] = data.RestaurantInfo{
 		Recommender: userName,
 		RecID:       userId,
-		Info:        info,
+		Description: descp,
 	}
-	sendMessageAndClearState(bot, userId, fmt.Sprintf("感謝 %s, 成功加入餐廳: %s", userName, restaurantName))
-
+	sendMessageAndClear(bot, userId, fmt.Sprintf("感謝 %s, 成功加入餐廳: %s", userName, restaurantName))
 }
 
 func AddingFailed(bot *tgbotapi.BotAPI, userID int64, errorMsg string) {
-	sendMessageAndClearState(bot, userID, fmt.Sprintf("*新增餐廳錯誤: %s*", errorMsg))
+	sendMessageAndClear(bot, userID, fmt.Sprintf("*新增錯誤: %s*", errorMsg))
 }
 
-func sendMessageAndClearState(bot *tgbotapi.BotAPI, userID int64, message string) {
+func sendMessageAndClear(bot *tgbotapi.BotAPI, userID int64, message string) {
 	utils.SendMessage(bot, userID, message)
 	interactive.DelInteractive(userID)
 }
@@ -231,7 +230,7 @@ func formatRestaurants(priceLevel int, shuffle bool, limit int) []string {
 			break
 		}
 		info := rm[name]
-		restaurants = append(restaurants, fmt.Sprintf("餐廳: %s\n推薦人: %s\n心得 :%s\n---------------------------------", name, info.Recommender, info.Info))
+		restaurants = append(restaurants, fmt.Sprintf("餐廳: %s\n推薦人: %s\n心得 :%s\n---------------------------------", name, info.Recommender, info.Description))
 	}
 	return restaurants
 }
@@ -246,7 +245,7 @@ func isRestaurantExist(restaurantName string) bool {
 	return false
 }
 
-func processAddPriceState(arState *AddRestaurantState, str string) bool {
+func processAddPriceState(arState *AddRestaurantInfo, str string) bool {
 	if str == constant.CALLBACK_LOW || str == constant.CALLBACK_MID || str == constant.CALLBACK_HIGH {
 		arState.PriceLevel = str
 	} else {

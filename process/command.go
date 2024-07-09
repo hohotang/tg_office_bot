@@ -30,6 +30,9 @@ const (
 	commandAskRandRestaurant  = "ask_rand_restaurant"
 	commandAskAllRestaurant   = "ask_all_restaurant"
 	commandAskFoodyPermission = "ask_foody_permission"
+	commandAddQA              = "add_qa"
+	commandDelQA              = "del_qa"
+	commandShowQA             = "show_qa"
 	commandReminderSwitch     = "reminder_switch"
 	commandGetGif             = "get_a_gif"
 	commandGetMusic           = "get_music"
@@ -293,6 +296,37 @@ func (h *AskFoodyPermissionCommand) HandleCommand(bot *tgbotapi.BotAPI, update *
 	}
 }
 
+type QAAddCommand struct{}
+
+func (h *QAAddCommand) HandleCommand(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
+	// if !utils.IsFoody(update.Message.From.ID) {
+	// 	utils.SendMessage(bot, update.Message.Chat.ID, msgUnauthorized)
+	// 	return
+	// }
+	regisQA(bot, update)
+}
+
+type QADelCommand struct{}
+
+func (h *QADelCommand) HandleCommand(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
+	if !utils.IsAdmin(update.Message.From.ID) {
+		utils.SendMessage(bot, update.Message.Chat.ID, msgUnauthorized)
+		return
+	}
+	id, _ := utils.ParseIDFromCommandArguments(update)
+	if questStr, err := DelQAInfo(int(id)); err == nil {
+		utils.SendMessage(bot, update.Message.Chat.ID, fmt.Sprintf("刪除問題: %s", questStr))
+	} else {
+		utils.SendMessage(bot, update.Message.Chat.ID, "沒有找到")
+	}
+}
+
+type QAShowListCommand struct{}
+
+func (h *QAShowListCommand) HandleCommand(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
+	showQAQuestions(bot, update)
+}
+
 type ReminderSwitchCommand struct{}
 
 func (h *ReminderSwitchCommand) HandleCommand(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
@@ -365,6 +399,9 @@ func InitializePrivateCommandRouter() *CommandRouter {
 	router.Register(commandAskRandRestaurant, &AskRandomRestaurantCommand{})
 	router.Register(commandAskAllRestaurant, &AskAllRestaurantCommand{})
 	router.Register(commandAskFoodyPermission, &AskFoodyPermissionCommand{})
+	router.Register(commandAddQA, &QAAddCommand{})
+	router.Register(commandDelQA, &QADelCommand{})
+	router.Register(commandShowQA, &QAShowListCommand{})
 	router.Register(commandReminderSwitch, &ReminderSwitchCommand{})
 	router.Register(commandGetGif, &GetGifCommand{})
 	router.Register(commandGetMusic, &GetMusicCommand{})
@@ -423,6 +460,8 @@ func appendAdminCommands(builder *strings.Builder) {
 	builder.WriteString(fmt.Sprintf("\n/%s : 顯示所有饕客", commandListFoody))
 	builder.WriteString(fmt.Sprintf("\n/%s : 新增禁止使用者", commandAddBan))
 	builder.WriteString(fmt.Sprintf("\n/%s : 刪除禁止使用者", commandDelBan))
+	builder.WriteString(fmt.Sprintf("\n/%s : 新增QA", commandAddQA))
+	builder.WriteString(fmt.Sprintf("\n/%s : 刪除QA", commandDelQA))
 	builder.WriteString(fmt.Sprintf("\n/%s : 切換提醒開關", commandReminderSwitch))
 	builder.WriteString("\n-------管理員權限-------")
 }
@@ -445,6 +484,7 @@ func appendFoodyCommands(builder *strings.Builder) {
 
 // appendGeneralCommands appends general commands to the string builder.
 func appendGeneralCommands(builder *strings.Builder) {
+	builder.WriteString(fmt.Sprintf("\n/%s : 查詢QA", commandShowQA))
 	builder.WriteString(fmt.Sprintf("\n/%s : 快樂一下", commandGetGif))
 	builder.WriteString(fmt.Sprintf("\n/%s : 隨機一首歌", commandGetMusic))
 	builder.WriteString(fmt.Sprintf("\n/%s : 推薦三家符合價位的餐廳", commandAskRandRestaurant))

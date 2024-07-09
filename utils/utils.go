@@ -208,6 +208,7 @@ func SaveDataToFile(filename string) error {
 		Cache:              data.Cache,
 		FoodyMap:           data.FoodyMap,
 		RestaurantMap:      data.RestaurantMap[:],
+		QAList:             data.QAList,
 	}
 
 	file, err := os.Create(conf.GetInstance().SaveFilePath + filename)
@@ -310,6 +311,11 @@ func IsAskRestaurantCallback(cs string) bool {
 func IsAddRestaurantCallback(cs string) bool {
 	parts := strings.Split(cs, "_")
 	return parts[0] == constant.CALLBACK_ADD
+}
+
+func IsQACallback(cs string) bool {
+	parts := strings.Split(cs, "_")
+	return parts[0] == constant.CALLBACK_QA
 }
 
 func AnalysisRestaurantCallback(cs string) (string, string) {

@@ -21,6 +21,8 @@ func ProcessCallbackQuery(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 		ProcessAskRestaurantCB(bot, update)
 	} else if utils.IsUpdateGameSettingCallback(cb.Data) {
 		ProcessUpdateGameSettingCB(bot, update)
+	} else if utils.IsQACallback(cb.Data) {
+		handleQAButtonClick(bot, update)
 	}
 }
 

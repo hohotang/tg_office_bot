@@ -18,6 +18,7 @@ const (
 	CALLBACK_DENY       = "deny"
 	CALLBACK_UPDATE     = "update"
 	CALL_BACK_TEST      = "update_test"
+	CALLBACK_QA         = "qa"
 
 	BRANCH_TEST = "test/tg_auto"
 )
