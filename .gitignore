@@ -1,11 +1,11 @@
 ﻿*.exe
 *.json
-*.gif
-*.jpg
-*.png
-*.jpeg
-*.mp4
-*.wav
+gif/*.gif
+gif/*.jpg
+gif/*.png
+gif/*.jpeg
+music/*.mp4
+music/*.wav
 *.xlsx
 *.exe~
 .git_old
