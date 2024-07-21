@@ -1,9 +1,10 @@
 ﻿*.exe
 *.json
-gif/*.gif
-gif/*.jpg
-gif/*.png
-gif/*.jpeg
+gif/*/*.gif
+gif/*/*.jpg
+gif/*/*.png
+gif/*/*.jpeg
+gif/*/*.mp4
 music/*.mp4
 music/*.wav
 *.xlsx
